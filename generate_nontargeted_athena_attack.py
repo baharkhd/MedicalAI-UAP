@@ -8,6 +8,9 @@ from utils.data import load_data
 from utils.model import load_model
 from utils.plot import make_adv_img, make_confusion_matrix
 from utils.utils import get_fooling_rate, set_art
+from utils.file import load_from_json
+
+from athena_attacks.attacker_art import generate
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', type=str, default='chestx')
@@ -28,6 +31,7 @@ model = load_model(
     model_type=args.model,
     mode='inference'
 )
+print("sala2m")
 
 # # Generate adversarial examples
 
@@ -47,6 +51,22 @@ adv_crafter = UniversalPerturbation(
     eps=eps,
     norm=norm)
 
+attack_configs = load_from_json(args.attack_configs)
+number_of_attacks = attack_configs.get("num_attacks")
+
+for attack_id in number_of_attacks:
+    key = f"configs{attack_id}"
+    attack_args = attack_configs[key]
+
+    data_loader = (X_test, y_test)
+    data_adv = generate(model=model,
+                        data_loader=data_loader,
+                        attack_args=attack_args
+                        )
+
+    print(data_adv.shape)
+
+print("----------")
 _ = adv_crafter.generate(X_train)
 noise = adv_crafter.noise[0, :].astype(np.float32)
 base_f = 'nontargeted_{}_{}_eps{:.3f}'.format(
